@@ -144,6 +144,39 @@ class StableFast3DSampler:
 
         return ([mesh],)
 
+class StableFast3DSaveWithoutPreview:
+    CATEGORY = SF3D_CATEGORY
+    FUNCTION = "save_no_preview"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ("STRING", )
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "mesh": ("MESH",),
+                "filename_prefix": ("STRING", {"default": "SF3D"}),
+            }
+        }
+
+    def save_no_preview(self, mesh, filename_prefix):
+        output_dir = folder_paths.get_output_directory()
+        glbs = []
+        out_path = ""
+        for idx, m in enumerate(mesh):
+            scene = trimesh.Scene(m)
+            glb_data = gltf.export_glb(scene, include_normals=True)
+            logging.info(f"Generated GLB model with {len(glb_data)} bytes")
+
+            full_output_folder, filename, counter, subfolder, filename_prefix = (
+                folder_paths.get_save_image_path(filename_prefix, output_dir)
+            )
+            filename = filename.replace("%batch_num%", str(idx))
+            out_path = os.path.join(full_output_folder, f"{filename}_{counter:05}_.glb")
+            with open(out_path, "wb") as f:
+                f.write(glb_data)
+            glbs.append(base64.b64encode(glb_data).decode("utf-8"))
+        return (str(out_path),)
 
 class StableFast3DSave:
     CATEGORY = SF3D_CATEGORY
@@ -186,6 +219,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "StableFast3DLoader": "Stable Fast 3D Loader",
     "StableFast3DPreview": "Stable Fast 3D Preview",
     "StableFast3DSampler": "Stable Fast 3D Sampler",
+    "StableFast3DSaveWithoutPreview": "Stable Fast 3D Save Without Preview",
     "StableFast3DSave": "Stable Fast 3D Save",
 }
 
@@ -193,6 +227,7 @@ NODE_CLASS_MAPPINGS = {
     "StableFast3DLoader": StableFast3DLoader,
     "StableFast3DPreview": StableFast3DPreview,
     "StableFast3DSampler": StableFast3DSampler,
+    "StableFast3DSaveWithoutPreview": StableFast3DSaveWithoutPreview,
     "StableFast3DSave": StableFast3DSave,
 }
 
